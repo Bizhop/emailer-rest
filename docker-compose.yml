@@ -1,0 +1,23 @@
+version: '3'
+
+services:
+  db:
+    image: postgres:15
+    container_name: emailer-database
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=emailer
+      - POSTGRES_PASSWORD=emailer
+      - POSTGRES_DB=emailer
+  backend:
+    image: emailer-rest
+    ports:
+      - "8080:80"
+    depends_on:
+      - db
+    container_name: emailer-backend
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/emailer
+      - SPRING_DATASOURCE_USERNAME=emailer
+      - SPRING_DATASOURCE_PASSWORD=emailer
