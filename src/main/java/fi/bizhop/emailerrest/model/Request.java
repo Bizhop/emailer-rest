@@ -1,3 +1,16 @@
 package fi.bizhop.emailerrest.model;
 
-public record Request(String email, String date, String store) {}
+import com.opencsv.bean.CsvBindByPosition;
+import lombok.Data;
+
+@Data
+public class Request {
+    @CsvBindByPosition(position = 0)
+    String email;
+
+    @CsvBindByPosition(position = 1)
+    String date;
+
+    @CsvBindByPosition(position = 2)
+    String store;
+}

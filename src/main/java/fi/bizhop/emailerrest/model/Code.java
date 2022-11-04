@@ -3,6 +3,7 @@ package fi.bizhop.emailerrest.model;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.NonNull;
 
 import javax.persistence.*;
 
@@ -15,7 +16,8 @@ public class Code {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    String code;
-    String valid;
+    @NonNull Store store;
+    @NonNull String code;
+    @NonNull String valid;
     boolean used;
 }
