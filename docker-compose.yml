@@ -14,7 +14,6 @@ services:
     image: emailer-rest
     ports:
       - "8080:8080"
-      - "8888:8888"
     depends_on:
       - db
     container_name: emailer-backend
@@ -25,3 +24,4 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/emailer
       - SPRING_DATASOURCE_USERNAME=emailer
       - SPRING_DATASOURCE_PASSWORD=emailer
+      - API_KEY=test

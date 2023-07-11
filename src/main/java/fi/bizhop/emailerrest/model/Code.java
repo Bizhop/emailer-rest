@@ -16,8 +16,14 @@ public class Code {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @NonNull Store store;
-    @NonNull String code;
-    @NonNull String valid;
+    @NonNull
+    @Column(nullable = false)
+    Store store;
+    @NonNull
+    @Column(unique = true, nullable = false)
+    String code;
+    @NonNull
+    @Column(nullable = false)
+    String valid;
     boolean used;
 }
