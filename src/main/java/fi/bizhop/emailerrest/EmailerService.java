@@ -36,7 +36,12 @@ public class EmailerService {
 
     public List<Code> getCodes(Boolean used) { return codeRepository.findAllByUsed(used); }
 
-    public void saveCodes(List<Code> codes) { codeRepository.saveAll(codes); }
+    public List<Code> saveCodes(List<Code> codes) {
+        var saved = codeRepository.saveAll(codes);
+        var list = new ArrayList<Code>();
+        saved.forEach(list::add);
+        return list;
+    }
 
     public List<EmailWrapper> processRequests(String body, boolean send) {
         var requests = new CsvToBeanBuilder<Request>(new StringReader(body))

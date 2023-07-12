@@ -14,6 +14,7 @@ services:
     image: emailer-rest
     ports:
       - "8080:8080"
+      - "8888:8888"
     depends_on:
       - db
     container_name: emailer-backend

@@ -25,16 +25,19 @@ public class EmailerController {
         }
     }
 
-    @RequestMapping(value = "/codes/pg", method = RequestMethod.POST, consumes = "text/plain")
-    public void importPgCodes(@RequestBody String body) {
-        var codes = Utils.parsePgCodes(body);
-        service.saveCodes(codes);
-    }
-
-    @RequestMapping(value = "/codes/nbdg", method = RequestMethod.POST, consumes = "text/plain")
-    public void importNbdgCodes(@RequestBody String body, @RequestParam String valid) {
-        var codes = Utils.parseNbdgCodes(body, valid);
-        service.saveCodes(codes);
+    @RequestMapping(value = "/codes", method = RequestMethod.POST, consumes = "text/plain")
+    public List<Code> importCodes(@RequestBody String body, @RequestParam String valid, @RequestParam String store) {
+        if("PG".equals(store)) {
+            var codes = Utils.parsePgCodes(body, valid);
+            return service.saveCodes(codes);
+        }
+        else if("NBDG".equals(store)) {
+            var codes = Utils.parseNbdgCodes(body, valid);
+            return service.saveCodes(codes);
+        }
+        else {
+            throw new UnsupportedOperationException("Incompatible store");
+        }
     }
 
     @RequestMapping(value = "/request", method = RequestMethod.POST, consumes = "text/plain", produces = "application/json")

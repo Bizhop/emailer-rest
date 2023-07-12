@@ -28,20 +28,15 @@ public class Utils {
 
     public static TemporalAccessor parseSimpleDate(String input) { return SIMPLE_DATE_FORMATTER.parse(input); }
 
-    public static List<Code> parsePgCodes(String input) {
+    public static List<Code> parsePgCodes(String input, String valid) {
         var scanner = new Scanner(input);
         var codes = new ArrayList<Code>();
         while(scanner.hasNextLine()) {
-            var line = scanner.nextLine();
-            var splitted = line.split("\\s");
-            if(splitted.length > 3) {
-                var code = splitted[0];
-                var valid = splitted[3];
-                if(PG_CODE_PATTERN.matcher(code).matches()) {
-                    codes.add(new Code(null, PG, code, valid, false));
-                } else {
-                    LOG.error("Invalid PG code: {}", code);
-                }
+            var code = scanner.nextLine();
+            if(PG_CODE_PATTERN.matcher(code).matches()) {
+                codes.add(new Code(null, PG, code, valid, false));
+            } else {
+                LOG.error("Invalid PG code: {}", code);
             }
         }
 

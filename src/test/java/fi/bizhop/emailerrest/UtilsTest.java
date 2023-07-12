@@ -13,14 +13,14 @@ public class UtilsTest {
     @Test
     void parsePgCodesTest() throws IOException {
         var pgCodes = FileUtils.readFileToString(new File("src/test/resources/pgCodes.txt"), Charset.defaultCharset());
-        var codes = Utils.parsePgCodes(pgCodes);
+        var codes = Utils.parsePgCodes(pgCodes, "07/2024");
         assertEquals(20, codes.size());
     }
 
     @Test
     void parsePgCodesDiscardNonMatchingByRexepTest() throws IOException {
         var pgCodes = FileUtils.readFileToString(new File("src/test/resources/pgCodesInvalid.txt"), Charset.defaultCharset());
-        var codes = Utils.parsePgCodes(pgCodes);
+        var codes = Utils.parsePgCodes(pgCodes, "07/2024");
         assertEquals(1, codes.size());
     }
 
