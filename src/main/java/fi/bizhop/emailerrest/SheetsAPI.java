@@ -1,0 +1,84 @@
+package fi.bizhop.emailerrest;
+
+import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
+import com.google.api.services.sheets.v4.Sheets;
+import fi.bizhop.emailerrest.db.SheetsRequestRepository;
+import fi.bizhop.emailerrest.model.SheetsRequest;
+import fi.bizhop.emailerrest.model.Store;
+import fi.bizhop.emailerrest.provider.CredentialsProvider;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.io.IOException;
+import java.security.GeneralSecurityException;
+import java.time.ZonedDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import static fi.bizhop.emailerrest.Utils.JSON_FACTORY;
+
+@Service
+@RequiredArgsConstructor
+public class SheetsAPI {
+    private final CredentialsProvider credentialsProvider;
+    private final SheetsRequestRepository sheetsRequestRepository;
+
+    private final String APPLICATION_NAME = "Emailer";
+    private final String SPREADSHEET_ID = System.getenv("EMAILER_SPREADSHEET_ID");
+
+    public List<SheetsRequest> getRequests() throws GeneralSecurityException, IOException {
+        // Build a new authorized API client service.
+        final var HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
+        var service = new Sheets.Builder(HTTP_TRANSPORT, JSON_FACTORY, credentialsProvider.getCredentials(HTTP_TRANSPORT))
+                .setApplicationName(APPLICATION_NAME)
+                .build();
+
+        var response = service.spreadsheets().values()
+                .get(SPREADSHEET_ID, "Vastauksista 1!A2:F")
+                .execute();
+        var values = response.getValues();
+
+        var requestsInDb = sheetsRequestRepository.findAll().stream()
+                .map(request -> String.format("%s-%s", request.getEmail(), request.getCompetitionDate()))
+                .collect(Collectors.toSet());
+
+        if(values == null || values.isEmpty()) {
+            System.out.println("No data");
+            return null;
+        } else {
+            var newRequests = new ArrayList<SheetsRequest>();
+            for(var row: values) {
+                if(row.size() < 6) {
+                    System.out.println("Row size less than 6");
+                }
+                else {
+                    var identifier = String.format("%s-%s", row.get(2), row.get(5));
+                    if(!requestsInDb.contains(identifier)) {
+                        Store store = null;
+                        var storeInput = (String)row.get(4);
+                        if(storeInput.contains("PowerGrip")) {
+                            store = Store.PG;
+                        }
+                        else if(storeInput.contains("NBDG")) {
+                            store = Store.NBDG;
+                        }
+
+                        var request = SheetsRequest.builder()
+                                .timestamp(ZonedDateTime.from(Utils.parseSheetsImportDateTime(row.get(0))))
+                                .name((String)row.get(1))
+                                .email((String)row.get(2))
+                                .competitionInfo((String)row.get(3))
+                                .store(store)
+                                .competitionDate((String)row.get(5))
+                                .done(false)
+                                .build();
+
+                        newRequests.add(sheetsRequestRepository.save(request));
+                    }
+                }
+            }
+            return newRequests;
+        }
+    }
+}

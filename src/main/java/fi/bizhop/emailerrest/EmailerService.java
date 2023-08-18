@@ -27,6 +27,7 @@ public class EmailerService {
     final CodeRepository codeRepository;
     final SentRepository sentRepository;
     final GmailAPI gmailAPI;
+    final SheetsAPI sheetsAPI;
 
     private final String EMAIL_FROM = "rahastonhoitaja@discgolfvikings.fi";
     private final String EMAIL_SUBJECT = "Kivikon viikkokisojen lahjakortti";
@@ -137,5 +138,14 @@ public class EmailerService {
     private void markSent(Email email) {
         var sent = Sent.fromEmail(email);
         sentRepository.save(sent);
+    }
+
+    public List<SheetsRequest> getNewSheetsRequests() {
+        try {
+            return sheetsAPI.getRequests();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 }

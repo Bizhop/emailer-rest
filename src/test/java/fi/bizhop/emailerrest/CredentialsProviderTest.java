@@ -21,7 +21,7 @@ public class CredentialsProviderTest {
         when(envProvider.getenv("EMAILER_CLIENT_SECRET")).thenReturn("test client secret");
         when(envProvider.getenv("EMAILER_PROJECT_ID")).thenReturn("test project id");
 
-        var credentials = credentialsProvider.getCredentials();
+        var credentials = credentialsProvider.getCredentialsString();
 
         System.out.println(credentials);
     }

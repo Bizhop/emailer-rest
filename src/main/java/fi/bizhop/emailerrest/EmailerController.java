@@ -3,6 +3,7 @@ package fi.bizhop.emailerrest;
 import fi.bizhop.emailerrest.model.Code;
 import fi.bizhop.emailerrest.model.EmailWrapper;
 import fi.bizhop.emailerrest.model.Report;
+import fi.bizhop.emailerrest.model.SheetsRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -55,5 +56,10 @@ public class EmailerController {
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             return Report.builder().error("Invalid date format").build();
         }
+    }
+
+    @RequestMapping(value = "/sheetsrequests/new", method = RequestMethod.GET, produces = "application/json")
+    public @ResponseBody List<SheetsRequest> getNewSheetsRequests() {
+        return service.getNewSheetsRequests();
     }
 }

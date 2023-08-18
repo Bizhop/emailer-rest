@@ -1,9 +1,14 @@
 package fi.bizhop.emailerrest;
 
+import com.google.api.client.json.JsonFactory;
+import com.google.api.client.json.gson.GsonFactory;
 import fi.bizhop.emailerrest.model.Code;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAccessor;
 import java.util.ArrayList;
@@ -19,14 +24,28 @@ public class Utils {
 
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private static final DateTimeFormatter SIMPLE_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    private static final DateTimeFormatter SHEETS_IMPORT_DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("d.M.yyyy H.m.s");
     private static final Pattern PG_CODE_PATTERN = Pattern.compile("^[0-9A-Z]{4}-[0-9A-Z]{4}-[0-9A-Z]{4}$");
     private static final Pattern NBDG_CODE_PATTERN = Pattern.compile("^[0-9a-z]{16}$");
+
+    public static final JsonFactory JSON_FACTORY = GsonFactory.getDefaultInstance();
 
     public static String formatDateTime(TemporalAccessor input) {
         return DATE_TIME_FORMATTER.format(input);
     }
 
     public static TemporalAccessor parseSimpleDate(String input) { return SIMPLE_DATE_FORMATTER.parse(input); }
+
+    public static ZonedDateTime parseSheetsImportDateTime(Object input) {
+        if(input instanceof String inputString) {
+            var cleared = inputString.replace("klo ", "").trim();
+            var ta = SHEETS_IMPORT_DATE_TIME_FORMATTER.parse(cleared);
+            var localDateTime = LocalDateTime.from(ta);
+            return ZonedDateTime.of(localDateTime, ZoneId.systemDefault());
+        }
+
+        return null;
+    }
 
     public static List<Code> parsePgCodes(String input, String valid) {
         var scanner = new Scanner(input);

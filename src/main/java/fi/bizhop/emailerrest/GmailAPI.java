@@ -33,46 +33,15 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 
+import static fi.bizhop.emailerrest.Utils.JSON_FACTORY;
 import static javax.mail.Message.RecipientType.TO;
 
 @Service
 @RequiredArgsConstructor
 public class GmailAPI {
     private final CredentialsProvider credentialsProvider;
-    private final TokenDataStoreFactory tokenDataStoreFactory;
 
-    /** Application name. */
     private final String APPLICATION_NAME = "Emailer";
-    /** Global instance of the JSON factory. */
-    private final JsonFactory JSON_FACTORY = GsonFactory.getDefaultInstance();
-
-    /**
-     * Global instance of the scopes required by this quickstart.
-     * If modifying these scopes, delete your previously saved tokens/ folder.
-     */
-    private final List<String> SCOPES = Collections.singletonList(GmailScopes.MAIL_GOOGLE_COM);
-
-    /**
-     * Creates an authorized Credential object.
-     * @param HTTP_TRANSPORT The network HTTP Transport.
-     * @return An authorized Credential object.
-     * @throws IOException If the credentials.json file cannot be found.
-     */
-    private Credential getCredentials(final NetHttpTransport HTTP_TRANSPORT) throws IOException {
-        var credentials = credentialsProvider.getCredentials();
-        var in = new ByteArrayInputStream(credentials.getBytes());
-        var clientSecrets = GoogleClientSecrets.load(JSON_FACTORY, new InputStreamReader(in));
-
-        // Build flow and trigger user authorization request.
-        var flow = new GoogleAuthorizationCodeFlow.Builder(
-                HTTP_TRANSPORT, JSON_FACTORY, clientSecrets, SCOPES)
-                .setDataStoreFactory(tokenDataStoreFactory)
-                .setAccessType("offline")
-                .build();
-        var receiver = new LocalServerReceiver.Builder().setPort(8888).build();
-        //returns an authorized Credential object.
-        return new AuthorizationCodeInstalledApp(flow, receiver).authorize("user");
-    }
 
     /**
      * Create a MimeMessage using the parameters provided.
@@ -125,7 +94,7 @@ public class GmailAPI {
         // Build a new authorized API client service.
         try {
             final var HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
-            var service = new Gmail.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials(HTTP_TRANSPORT))
+            var service = new Gmail.Builder(HTTP_TRANSPORT, JSON_FACTORY, credentialsProvider.getCredentials(HTTP_TRANSPORT))
                     .setApplicationName(APPLICATION_NAME)
                     .build();
 
