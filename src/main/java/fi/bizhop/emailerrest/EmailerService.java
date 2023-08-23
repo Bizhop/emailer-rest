@@ -3,6 +3,7 @@ package fi.bizhop.emailerrest;
 import com.opencsv.bean.CsvToBeanBuilder;
 import fi.bizhop.emailerrest.db.CodeRepository;
 import fi.bizhop.emailerrest.db.SentRepository;
+import fi.bizhop.emailerrest.db.SheetsRequestRepository;
 import fi.bizhop.emailerrest.model.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -18,6 +19,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 
+import static fi.bizhop.emailerrest.model.SheetsRequest.Status.*;
 import static fi.bizhop.emailerrest.model.Store.NBDG;
 import static fi.bizhop.emailerrest.model.Store.PG;
 
@@ -26,6 +28,7 @@ import static fi.bizhop.emailerrest.model.Store.PG;
 public class EmailerService {
     final CodeRepository codeRepository;
     final SentRepository sentRepository;
+    final SheetsRequestRepository sheetsRequestRepository;
     final GmailAPI gmailAPI;
     final SheetsAPI sheetsAPI;
 
@@ -50,6 +53,10 @@ public class EmailerService {
                 .build()
                 .parse();
 
+        return processRequests(requests, send);
+    }
+
+    private List<EmailWrapper> processRequests(List<Request> requests, boolean send) {
         var codesPerStore = new HashMap<Store, List<Code>>();
         codesPerStore.put(PG, codeRepository.findAllByStoreAndUsedFalse(PG));
         codesPerStore.put(NBDG, codeRepository.findAllByStoreAndUsedFalse(NBDG));
@@ -147,5 +154,57 @@ public class EmailerService {
             e.printStackTrace();
             return null;
         }
+    }
+
+    public List<SheetsRequest> getSheetRequests(SheetsRequest.Status status) {
+        return status == null ? sheetsRequestRepository.findAll() : sheetsRequestRepository.findByStatus(status);
+    }
+
+    public List<EmailWrapper> completeSheetsRequests(List<Long> ids, boolean send) {
+        var requests = sheetsRequestRepository.findByIdInAndStatus(ids, REQUESTED);
+
+        if(requests.size() != ids.size()) {
+            System.out.println("Number of ids and requests don't match");
+            return null;
+        }
+
+        var legacyRequests = requests.stream()
+                .map(request -> {
+                    var legacyRequest = new Request();
+                    legacyRequest.setEmail(request.getEmail());
+                    legacyRequest.setDate(request.getCompetitionDate());
+                    legacyRequest.setStore(request.getStore().getEmailName());
+                    return legacyRequest;
+                })
+                .toList();
+
+        var processedRequests = processRequests(legacyRequests, send);
+
+        if(send) {
+            requests.forEach(request -> request.setStatus(COMPLETED));
+            sheetsRequestRepository.saveAll(requests);
+        }
+
+        return processedRequests;
+    }
+
+    public List<SheetsRequest> rejectSheetsRequests(List<Long> ids) {
+        var requests = sheetsRequestRepository.findByIdIn(ids);
+
+        if(requests.size() != ids.size()) {
+            System.out.println("Number of ids and requests don't match");
+            return null;
+        }
+
+        requests.forEach(request -> {
+            if(request.getStatus() == REQUESTED) {
+                request.setStatus(REJECTED);
+            } else {
+                System.out.printf("Invalid status change from %s to REJECTED\n", request.getStatus());
+            }
+        });
+        sheetsRequestRepository.saveAll(requests);
+
+        return sheetsRequestRepository.findByIdIn(ids);
     }
 }

@@ -38,5 +38,9 @@ public class SheetsRequest {
     String competitionDate;
 
     @Column(nullable = false)
-    boolean done;
+    Status status;
+
+    public enum Status {
+        REQUESTED, COMPLETED, REJECTED;
+    }
 }

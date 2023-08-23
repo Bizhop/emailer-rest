@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static fi.bizhop.emailerrest.Utils.JSON_FACTORY;
+import static fi.bizhop.emailerrest.model.SheetsRequest.Status.REQUESTED;
 
 @Service
 @RequiredArgsConstructor
@@ -71,7 +72,7 @@ public class SheetsAPI {
                                 .competitionInfo((String)row.get(3))
                                 .store(store)
                                 .competitionDate((String)row.get(5))
-                                .done(false)
+                                .status(REQUESTED)
                                 .build();
 
                         newRequests.add(sheetsRequestRepository.save(request));

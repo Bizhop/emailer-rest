@@ -13,15 +13,17 @@ public class AccessFilter implements Filter {
         var request = (HttpServletRequest) servletRequest;
         var response = (HttpServletResponse) servletResponse;
 
-        var auth = request.getParameter("api-key");
-        if(auth == null) {
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            return;
-        }
+        if(!"OPTIONS".equals(request.getMethod())) {
+            var auth = request.getHeader("Authorization");
+            if (auth == null) {
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                return;
+            }
 
-        if (!API_KEY.equals(auth)) {
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            return;
+            if (!API_KEY.equals(auth)) {
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                return;
+            }
         }
 
         chain.doFilter(request, response);

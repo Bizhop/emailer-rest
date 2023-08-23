@@ -1,7 +1,7 @@
 package fi.bizhop.emailerrest.model;
 
 public enum Store {
-    NBDG("nbdg", "NBDG"), PG("pg", "Powergrip");
+    NBDG("nbdg", "NBDG"), PG("pg", "PowerGrip");
 
     private final String storeName;
     private final String emailName;
