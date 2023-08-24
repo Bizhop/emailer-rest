@@ -33,8 +33,8 @@ public class EmailerService {
     final SheetsAPI sheetsAPI;
 
     private final String EMAIL_FROM = "rahastonhoitaja@discgolfvikings.fi";
-    private final String EMAIL_SUBJECT = "Kivikon viikkokisojen lahjakortti";
-    private final String EMAIL_TEMPLATE = "Hei,\n\nja onneksi olkoon! Voitit Kivikon viikkokisoissa <DATE> lahjakortin arvoltaan 15€.\n\nOhessa koodi, jonka voit käyttää <STORE>-kauppaan. Koodi on voimassa <VALID> asti.\n\n<CODE> 15.00 €\n\nYstävällisin terveisin:\n\nVille Piispa\n\nDisc Golf Vikings ry:n rahastonhoitaja\nDisc Golf Vikings Viikkokisatiimi\n";
+    private final String EMAIL_SUBJECT = "Lahjakortti, <COMPETITION>";
+    private final String EMAIL_TEMPLATE = "Hei,\n\nja onneksi olkoon! Voitit Disc Golf Vikingsin järjestämässä kilpailussa (<COMPETITION>, <DATE>) lahjakortin arvoltaan 15€.\n\nOhessa koodi, jonka voit käyttää <STORE>-kauppaan. Koodi on voimassa <VALID> asti.\n\n<CODE> 15.00 €\n\nYstävällisin terveisin:\n\nVille Piispa\n\nDisc Golf Vikings ry:n rahastonhoitaja\nDisc Golf Vikings Viikkokisatiimi\n";
 
     public List<Code> getCodes() { return codeRepository.findAll();  }
 
@@ -53,10 +53,10 @@ public class EmailerService {
                 .build()
                 .parse();
 
-        return processRequests(requests, send);
+        return processRequests(requests, send, "Kivikon viikkokisat", null);
     }
 
-    private List<EmailWrapper> processRequests(List<Request> requests, boolean send) {
+    private List<EmailWrapper> processRequests(List<Request> requests, boolean send, String competition, String date) {
         var codesPerStore = new HashMap<Store, List<Code>>();
         codesPerStore.put(PG, codeRepository.findAllByStoreAndUsedFalse(PG));
         codesPerStore.put(NBDG, codeRepository.findAllByStoreAndUsedFalse(NBDG));
@@ -82,11 +82,11 @@ public class EmailerService {
                         else {
                             var code = codes.remove(0);
                             usedCodes.add(code);
-                            var content = createEmailContentWithTemplate(store, request.getDate(), code);
+                            var content = createEmailContentWithTemplate(store, date == null ? request.getDate() : date, code, competition);
                             var email = Email.builder()
                                     .from(EMAIL_FROM)
                                     .to(request.getEmail())
-                                    .subject(EMAIL_SUBJECT)
+                                    .subject(EMAIL_SUBJECT.replace("<COMPETITION>", competition))
                                     .content(content)
                                     .build();
                             return EmailWrapper.builder()
@@ -129,9 +129,10 @@ public class EmailerService {
                 .build();
     }
 
-    private String createEmailContentWithTemplate(Store store, String date, Code code) {
+    private String createEmailContentWithTemplate(Store store, String date, Code code, String competition) {
         return EMAIL_TEMPLATE
                 .replace("<DATE>", date)
+                .replace("<COMPETITION>", competition)
                 .replace("<CODE>", code.getCode())
                 .replace("<STORE>", store.getEmailName())
                 .replace("<VALID>", code.getValid());
@@ -160,7 +161,7 @@ public class EmailerService {
         return status == null ? sheetsRequestRepository.findAll() : sheetsRequestRepository.findByStatus(status);
     }
 
-    public List<EmailWrapper> completeSheetsRequests(List<Long> ids, boolean send) {
+    public List<EmailWrapper> completeSheetsRequests(List<Long> ids, boolean send, String competition, String date) {
         var requests = sheetsRequestRepository.findByIdInAndStatus(ids, REQUESTED);
 
         if(requests.size() != ids.size()) {
@@ -178,7 +179,7 @@ public class EmailerService {
                 })
                 .toList();
 
-        var processedRequests = processRequests(legacyRequests, send);
+        var processedRequests = processRequests(legacyRequests, send, competition, date);
 
         if(send) {
             requests.forEach(request -> request.setStatus(COMPLETED));

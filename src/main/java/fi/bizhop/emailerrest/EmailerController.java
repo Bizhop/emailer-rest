@@ -77,9 +77,9 @@ public class EmailerController {
     }
 
     @RequestMapping(value = "/sheetsrequests/complete", method = RequestMethod.POST, consumes = "application/json", produces = "application/json")
-    public List<EmailWrapper> completeSheetsRequests(@RequestBody List<Long> ids, @RequestParam boolean send, HttpServletResponse response) {
+    public List<EmailWrapper> completeSheetsRequests(@RequestBody List<Long> ids, @RequestParam boolean send, @RequestParam(defaultValue = "Kivikon viikkokisat") String competition, @RequestParam(required = false) String date, HttpServletResponse response) {
         response.setStatus(SC_OK);
-        return service.completeSheetsRequests(ids, send);
+        return service.completeSheetsRequests(ids, send, competition, date);
     }
 
     @RequestMapping(value = "/sheetsrequests/reject", method = RequestMethod.POST, consumes = "application/json", produces = "application/json")

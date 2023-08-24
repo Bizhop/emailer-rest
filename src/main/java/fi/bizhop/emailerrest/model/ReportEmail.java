@@ -25,7 +25,7 @@ public class ReportEmail {
 
     private static String store(String content) {
         var store = "No store found";
-        if(content.contains("Powergrip")) {
+        if(content.contains("PowerGrip")) {
             store = "PG";
         } else if(content.contains("NBDG")) {
             store = "NBDG";
