@@ -45,12 +45,6 @@ public class EmailerController {
         }
     }
 
-    @RequestMapping(value = "/request", method = RequestMethod.POST, consumes = "text/plain", produces = "application/json")
-    public @ResponseBody List<EmailWrapper> processRequest(@RequestBody String body, @RequestParam boolean send, HttpServletResponse response) {
-        response.setStatus(SC_OK);
-        return service.processRequests(body, send);
-    }
-
     @RequestMapping(value = "/report", method = RequestMethod.GET, produces = "application/json")
     public @ResponseBody Report report(@RequestParam String from, @RequestParam String to, HttpServletResponse response) {
         response.setStatus(SC_OK);

@@ -2,7 +2,9 @@ package fi.bizhop.emailerrest;
 
 import fi.bizhop.emailerrest.db.CodeRepository;
 import fi.bizhop.emailerrest.db.SentRepository;
+import fi.bizhop.emailerrest.db.SheetsRequestRepository;
 import fi.bizhop.emailerrest.model.Email;
+import fi.bizhop.emailerrest.model.SheetsRequest;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -20,7 +22,11 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
+import static fi.bizhop.emailerrest.model.SheetsRequest.Status.REQUESTED;
+import static fi.bizhop.emailerrest.model.Store.NBDG;
 import static fi.bizhop.emailerrest.model.Store.PG;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -30,6 +36,7 @@ public class EmailerServiceTest {
     @Mock CodeRepository codeRepository;
     @Mock SentRepository sentRepository;
     @Mock GmailAPI gmailAPI;
+    @Mock SheetsRequestRepository sheetsRequestRepository;
     @InjectMocks EmailerService service;
 
     @BeforeAll
@@ -38,55 +45,64 @@ public class EmailerServiceTest {
     }
 
     @Test
-    void requestPreview() throws IOException {
-        var request = FileUtils.readFileToString(new File("src/test/resources/request.csv"), Charset.defaultCharset());
-
+    void requestPreview() {
+        when(sheetsRequestRepository.findByIdInAndStatus(List.of(1L, 2L), REQUESTED)).thenReturn(new ArrayList<>(TestObjects.REQUESTS));
         when(codeRepository.findAllByStoreAndUsedFalse(PG)).thenReturn(new ArrayList<>(TestObjects.PG_CODES));
+        when(codeRepository.findAllByStoreAndUsedFalse(NBDG)).thenReturn(new ArrayList<>(TestObjects.NBDG_CODES));
 
-        var response = service.processRequests(request, false);
+        var response = service.completeSheetsRequests(List.of(1L, 2L), false, "Kivikon viikkokisat", null);
 
         verify(gmailAPI, never()).sendEmail(any());
         verify(codeRepository, never()).save(any());
         verify(sentRepository, never()).save(any());
 
         assertEquals(2, response.size());
-        response.forEach(wrapper -> {
-            assertNotNull(wrapper.getEmail());
-            assertNull(wrapper.getError());
-        });
+
+        var erkki = response.get(0);
+        assertEquals("erkki@example.com", erkki.getEmail().getTo());
+        assertNull(erkki.getError());
+
+        var matti = response.get(1);
+        assertEquals("matti@example.com", matti.getEmail().getTo());
+        assertNull(matti.getError());
     }
 
     @Test
-    void requestPreviewNotEnoughCodes() throws IOException {
-        var request = FileUtils.readFileToString(new File("src/test/resources/request4.csv"), Charset.defaultCharset());
+    void requestPreviewNotEnoughCodes() {
+        when(sheetsRequestRepository.findByIdInAndStatus(List.of(1L, 2L), REQUESTED)).thenReturn(new ArrayList<>(TestObjects.REQUESTS));
+        when(codeRepository.findAllByStoreAndUsedFalse(PG)).thenReturn(new ArrayList<>(List.of(TestObjects.PG_CODES.get(0))));
+        when(codeRepository.findAllByStoreAndUsedFalse(NBDG)).thenReturn(Collections.emptyList());
 
-        when(codeRepository.findAllByStoreAndUsedFalse(PG)).thenReturn(new ArrayList<>(TestObjects.PG_CODES));
-
-        var response = service.processRequests(request, false);
+        var response = service.completeSheetsRequests(List.of(1L, 2L), false, "Kivikon viikkokisat", null);
 
         verify(gmailAPI, never()).sendEmail(any());
         verify(codeRepository, never()).save(any());
         verify(sentRepository, never()).save(any());
 
-        assertEquals(4, response.size());
+        assertEquals(2, response.size());
 
         var successes = response.stream()
                 .filter(wrapper -> wrapper.getEmail() != null)
-                .count();
-        assertEquals(2, successes);
+                .toList();
+        assertEquals(1, successes.size());
+        var success = successes.get(0);
+        assertEquals("erkki@example.com", success.getEmail().getTo());
+        assertNull(success.getError());
 
         var failures = response.stream()
                 .filter(wrapper -> wrapper.getError() != null)
-                .count();
-        assertEquals(2, failures);
+                .toList();
+        assertEquals(1, failures.size());
+        var failure = failures.get(0);
+        assertNull(failure.getEmail());
+        assertEquals("Not enough codes for nbdg", failure.getError());
     }
 
     @Test
-    void requestSend() throws IOException {
-        var request = FileUtils.readFileToString(new File("src/test/resources/request.csv"), Charset.defaultCharset());
-
-
+    void requestSend() {
+        when(sheetsRequestRepository.findByIdInAndStatus(List.of(1L, 2L), REQUESTED)).thenReturn(new ArrayList<>(TestObjects.REQUESTS));
         when(codeRepository.findAllByStoreAndUsedFalse(PG)).thenReturn(new ArrayList<>(TestObjects.PG_CODES));
+        when(codeRepository.findAllByStoreAndUsedFalse(NBDG)).thenReturn(new ArrayList<>(TestObjects.NBDG_CODES));
 
         when(gmailAPI.sendEmail(any(Email.class))).thenAnswer((Answer<Email>) invocation -> {
             var email = (Email)invocation.getArguments()[0];
@@ -94,7 +110,7 @@ public class EmailerServiceTest {
             return email;
         });
 
-        var response = service.processRequests(request, true);
+        var response = service.completeSheetsRequests(List.of(1L, 2L), true, "Kivikon viikkokisat", null);
 
         verify(gmailAPI, times(2)).sendEmail(any());
         verify(codeRepository, times(2)).save(any());
@@ -105,5 +121,17 @@ public class EmailerServiceTest {
             assertNotNull(wrapper.getEmail());
             assertNull(wrapper.getError());
         });
+    }
+
+    @Test
+    void requestIdsNotMatchingDb() {
+        when(sheetsRequestRepository.findByIdInAndStatus(List.of(1L, 2L, 3L), REQUESTED)).thenReturn(new ArrayList<>(TestObjects.REQUESTS));
+
+        var response = service.completeSheetsRequests(List.of(1L, 2L, 3L), false, "Kivikon viikkokisat", null);
+
+        assertEquals(1, response.size());
+        var error = response.get(0);
+        assertNull(error.getEmail());
+        assertEquals("Number of ids and requests don't match", error.getError());
     }
 }

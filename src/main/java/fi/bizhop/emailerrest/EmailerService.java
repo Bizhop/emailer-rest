@@ -1,6 +1,5 @@
 package fi.bizhop.emailerrest;
 
-import com.opencsv.bean.CsvToBeanBuilder;
 import fi.bizhop.emailerrest.db.CodeRepository;
 import fi.bizhop.emailerrest.db.SentRepository;
 import fi.bizhop.emailerrest.db.SheetsRequestRepository;
@@ -8,7 +7,6 @@ import fi.bizhop.emailerrest.model.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.io.StringReader;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
@@ -47,16 +45,11 @@ public class EmailerService {
         return list;
     }
 
-    public List<EmailWrapper> processRequests(String body, boolean send) {
-        var requests = new CsvToBeanBuilder<Request>(new StringReader(body))
-                .withType(Request.class)
-                .build()
-                .parse();
+    private List<EmailWrapper> processRequests(List<SheetsRequest> sheetsRequests, boolean send, String competition, String date) {
+        var requests = sheetsRequests.stream()
+                .map(Request::fromSheetsRequest)
+                .toList();
 
-        return processRequests(requests, send, "Kivikon viikkokisat", null);
-    }
-
-    private List<EmailWrapper> processRequests(List<Request> requests, boolean send, String competition, String date) {
         var codesPerStore = new HashMap<Store, List<Code>>();
         codesPerStore.put(PG, codeRepository.findAllByStoreAndUsedFalse(PG));
         codesPerStore.put(NBDG, codeRepository.findAllByStoreAndUsedFalse(NBDG));
@@ -165,21 +158,13 @@ public class EmailerService {
         var requests = sheetsRequestRepository.findByIdInAndStatus(ids, REQUESTED);
 
         if(requests.size() != ids.size()) {
-            System.out.println("Number of ids and requests don't match");
-            return null;
+            var error = EmailWrapper.builder()
+                    .error("Number of ids and requests don't match")
+                    .build();
+            return List.of(error);
         }
 
-        var legacyRequests = requests.stream()
-                .map(request -> {
-                    var legacyRequest = new Request();
-                    legacyRequest.setEmail(request.getEmail());
-                    legacyRequest.setDate(request.getCompetitionDate());
-                    legacyRequest.setStore(request.getStore().getEmailName());
-                    return legacyRequest;
-                })
-                .toList();
-
-        var processedRequests = processRequests(legacyRequests, send, competition, date);
+        var processedRequests = processRequests(requests, send, competition, date);
 
         if(send) {
             requests.forEach(request -> request.setStatus(COMPLETED));
