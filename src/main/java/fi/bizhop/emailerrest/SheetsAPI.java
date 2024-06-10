@@ -56,8 +56,13 @@ public class SheetsAPI {
                 else {
                     var identifier = String.format("%s-%s", row.get(2), row.get(5));
                     if(!requestsInDb.contains(identifier)) {
+                        var name = (String)row.get(1);
+                        var email = (String)row.get(2);
+                        var competitionDate = (String)row.get(3);
+                        var competitionInfo = (String)row.get(4);
+
                         Store store = null;
-                        var storeInput = (String)row.get(4);
+                        var storeInput = (String)row.get(5);
                         if(storeInput.contains("PowerGrip")) {
                             store = Store.PG;
                         }
@@ -65,17 +70,21 @@ public class SheetsAPI {
                             store = Store.NBDG;
                         }
 
-                        var request = SheetsRequest.builder()
-                                .timestamp(ZonedDateTime.from(Utils.parseSheetsImportDateTime(row.get(0))))
-                                .name((String)row.get(1))
-                                .email((String)row.get(2))
-                                .competitionInfo((String)row.get(3))
-                                .store(store)
-                                .competitionDate((String)row.get(5))
-                                .status(REQUESTED)
-                                .build();
+                        if(store != null) {
+                            var request = SheetsRequest.builder()
+                                    .timestamp(ZonedDateTime.from(Utils.parseSheetsImportDateTime(row.get(0))))
+                                    .name(name)
+                                    .email(email)
+                                    .competitionInfo(competitionInfo)
+                                    .store(store)
+                                    .competitionDate(competitionDate)
+                                    .status(REQUESTED)
+                                    .build();
 
-                        newRequests.add(sheetsRequestRepository.save(request));
+                            newRequests.add(sheetsRequestRepository.save(request));
+                        } else {
+                            System.out.println("Invalid store: " + storeInput);
+                        }
                     }
                 }
             }
