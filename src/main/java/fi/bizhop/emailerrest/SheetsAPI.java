@@ -54,7 +54,7 @@ public class SheetsAPI {
                     System.out.println("Row size less than 6");
                 }
                 else {
-                    var identifier = String.format("%s-%s", row.get(2), row.get(5));
+                    var identifier = String.format("%s-%s", row.get(2), row.get(3));
                     if(!requestsInDb.contains(identifier)) {
                         var name = (String)row.get(1);
                         var email = (String)row.get(2);
