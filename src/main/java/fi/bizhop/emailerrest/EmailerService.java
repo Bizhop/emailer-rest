@@ -3,7 +3,16 @@ package fi.bizhop.emailerrest;
 import fi.bizhop.emailerrest.db.CodeRepository;
 import fi.bizhop.emailerrest.db.SentRepository;
 import fi.bizhop.emailerrest.db.SheetsRequestRepository;
-import fi.bizhop.emailerrest.model.*;
+import fi.bizhop.emailerrest.model.Code;
+import fi.bizhop.emailerrest.model.Email;
+import fi.bizhop.emailerrest.model.EmailWrapper;
+import fi.bizhop.emailerrest.model.Report;
+import fi.bizhop.emailerrest.model.ReportEmail;
+import fi.bizhop.emailerrest.model.Request;
+import fi.bizhop.emailerrest.model.Sent;
+import fi.bizhop.emailerrest.model.SheetsRequest;
+import fi.bizhop.emailerrest.model.Store;
+import jdk.jshell.execution.Util;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -13,6 +22,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.temporal.TemporalAccessor;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
@@ -33,6 +43,17 @@ public class EmailerService {
     private final String EMAIL_FROM = "rahastonhoitaja@discgolfvikings.fi";
     private final String EMAIL_SUBJECT = "Lahjakortti, <COMPETITION>";
     private final String EMAIL_TEMPLATE = "Hei,\n\nja onneksi olkoon! Voitit Disc Golf Vikingsin järjestämässä kilpailussa (<COMPETITION>, <DATE>) lahjakortin arvoltaan 15€.\n\nOhessa koodi, jonka voit käyttää <STORE>-kauppaan. Koodi on voimassa <VALID> asti.\n\n<CODE> 15.00 €\n\nYstävällisin terveisin:\n\nVille Piispa\n\nDisc Golf Vikings ry:n rahastonhoitaja\nDisc Golf Vikings Viikkokisatiimi\n";
+
+    private final Comparator<SheetsRequest> compareRequests = (a, b) -> {
+        try {
+            var dateA = Utils.parseCompetitionDate(a.getCompetitionDate());
+            var dateB = Utils.parseCompetitionDate(b.getCompetitionDate());
+            return dateA.compareTo(dateB);
+        } catch (Exception e) {
+            System.out.printf("Error comparing dates: %s - %s\n", a.getCompetitionDate(), b.getCompetitionDate());
+            return 0;
+        }
+    };
 
     public List<Code> getCodes() { return codeRepository.findAll();  }
 
@@ -143,7 +164,7 @@ public class EmailerService {
 
     public List<SheetsRequest> getNewSheetsRequests() {
         try {
-            return sheetsAPI.getRequests();
+            return sheetsAPI.getRequests().stream().sorted(compareRequests).toList();
         } catch (Exception e) {
             e.printStackTrace();
             return null;
@@ -151,7 +172,9 @@ public class EmailerService {
     }
 
     public List<SheetsRequest> getSheetRequests(SheetsRequest.Status status) {
-        return status == null ? sheetsRequestRepository.findAll() : sheetsRequestRepository.findByStatus(status);
+        return status == null
+                ? sheetsRequestRepository.findAll().stream().sorted(compareRequests).toList()
+                : sheetsRequestRepository.findByStatus(status).stream().sorted(compareRequests).toList();
     }
 
     public List<EmailWrapper> completeSheetsRequests(List<Long> ids, boolean send, String competition, String date) {

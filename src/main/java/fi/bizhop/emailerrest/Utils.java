@@ -6,6 +6,7 @@ import fi.bizhop.emailerrest.model.Code;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -25,6 +26,8 @@ public class Utils {
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private static final DateTimeFormatter SIMPLE_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     private static final DateTimeFormatter SHEETS_IMPORT_DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("d.M.yyyy H.m.s");
+
+    private static final DateTimeFormatter SHEETS_COMPETITION_DATE_FORMATTER = DateTimeFormatter.ofPattern("d.M.yyyy");
     private static final Pattern PG_CODE_PATTERN = Pattern.compile("^[0-9A-Z]{4}-[0-9A-Z]{4}-[0-9A-Z]{4}$");
     private static final Pattern NBDG_CODE_PATTERN = Pattern.compile("^[0-9a-z]{16}$");
 
@@ -35,6 +38,12 @@ public class Utils {
     }
 
     public static TemporalAccessor parseSimpleDate(String input) { return SIMPLE_DATE_FORMATTER.parse(input); }
+
+    public static ZonedDateTime parseCompetitionDate(String input) {
+        var ta = SHEETS_COMPETITION_DATE_FORMATTER.parse(input);
+        var localDate = LocalDate.from(ta);
+        return ZonedDateTime.of(localDate.atTime(0, 0), ZoneId.systemDefault());
+    }
 
     public static ZonedDateTime parseSheetsImportDateTime(Object input) {
         if(input instanceof String inputString) {

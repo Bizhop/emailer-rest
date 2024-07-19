@@ -25,7 +25,7 @@ public class TestObjects{
                     .name("Erkki Esimerkki")
                     .email("erkki@example.com")
                     .competitionInfo("Kivikon viikkokisat")
-                    .competitionDate("6.6.2023")
+                    .competitionDate("1.7.2024")
                     .store(PG)
                     .status(REQUESTED)
                     .build(),
@@ -35,8 +35,18 @@ public class TestObjects{
                     .name("Matti Meikäläinen")
                     .email("matti@example.com")
                     .competitionInfo("")
-                    .competitionDate("7.7.2023")
+                    .competitionDate("10.6.2024")
                     .store(NBDG)
+                    .status(REQUESTED)
+                    .build(),
+            SheetsRequest.builder()
+                    .id(3L)
+                    .timestamp(ZonedDateTime.now())
+                    .name("Ville Vanhanen")
+                    .email("ville@example.com")
+                    .competitionInfo("")
+                    .competitionDate("15.7.2024")
+                    .store(PG)
                     .status(REQUESTED)
                     .build()
     );

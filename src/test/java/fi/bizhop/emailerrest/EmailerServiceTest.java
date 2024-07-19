@@ -4,8 +4,6 @@ import fi.bizhop.emailerrest.db.CodeRepository;
 import fi.bizhop.emailerrest.db.SentRepository;
 import fi.bizhop.emailerrest.db.SheetsRequestRepository;
 import fi.bizhop.emailerrest.model.Email;
-import fi.bizhop.emailerrest.model.SheetsRequest;
-import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -17,9 +15,6 @@ import org.slf4j.Logger;
 import org.springframework.boot.logging.LogLevel;
 import org.springframework.boot.logging.LoggingSystem;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.charset.Charset;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -46,7 +41,7 @@ public class EmailerServiceTest {
 
     @Test
     void requestPreview() {
-        when(sheetsRequestRepository.findByIdInAndStatus(List.of(1L, 2L), REQUESTED)).thenReturn(new ArrayList<>(TestObjects.REQUESTS));
+        when(sheetsRequestRepository.findByIdInAndStatus(List.of(1L, 2L), REQUESTED)).thenReturn(TestObjects.REQUESTS.subList(0, 2));
         when(codeRepository.findAllByStoreAndUsedFalse(PG)).thenReturn(new ArrayList<>(TestObjects.PG_CODES));
         when(codeRepository.findAllByStoreAndUsedFalse(NBDG)).thenReturn(new ArrayList<>(TestObjects.NBDG_CODES));
 
@@ -69,7 +64,7 @@ public class EmailerServiceTest {
 
     @Test
     void requestPreviewNotEnoughCodes() {
-        when(sheetsRequestRepository.findByIdInAndStatus(List.of(1L, 2L), REQUESTED)).thenReturn(new ArrayList<>(TestObjects.REQUESTS));
+        when(sheetsRequestRepository.findByIdInAndStatus(List.of(1L, 2L), REQUESTED)).thenReturn(TestObjects.REQUESTS.subList(0, 2));
         when(codeRepository.findAllByStoreAndUsedFalse(PG)).thenReturn(new ArrayList<>(List.of(TestObjects.PG_CODES.get(0))));
         when(codeRepository.findAllByStoreAndUsedFalse(NBDG)).thenReturn(Collections.emptyList());
 
@@ -100,7 +95,7 @@ public class EmailerServiceTest {
 
     @Test
     void requestSend() {
-        when(sheetsRequestRepository.findByIdInAndStatus(List.of(1L, 2L), REQUESTED)).thenReturn(new ArrayList<>(TestObjects.REQUESTS));
+        when(sheetsRequestRepository.findByIdInAndStatus(List.of(1L, 2L), REQUESTED)).thenReturn(TestObjects.REQUESTS.subList(0, 2));
         when(codeRepository.findAllByStoreAndUsedFalse(PG)).thenReturn(new ArrayList<>(TestObjects.PG_CODES));
         when(codeRepository.findAllByStoreAndUsedFalse(NBDG)).thenReturn(new ArrayList<>(TestObjects.NBDG_CODES));
 
@@ -125,13 +120,26 @@ public class EmailerServiceTest {
 
     @Test
     void requestIdsNotMatchingDb() {
-        when(sheetsRequestRepository.findByIdInAndStatus(List.of(1L, 2L, 3L), REQUESTED)).thenReturn(new ArrayList<>(TestObjects.REQUESTS));
+        when(sheetsRequestRepository.findByIdInAndStatus(List.of(1L, 2L, 3L, 4L), REQUESTED)).thenReturn(TestObjects.REQUESTS);
 
-        var response = service.completeSheetsRequests(List.of(1L, 2L, 3L), false, "Kivikon viikkokisat", null);
+        var response = service.completeSheetsRequests(List.of(1L, 2L, 3L, 4L), false, "Kivikon viikkokisat", null);
 
         assertEquals(1, response.size());
         var error = response.get(0);
         assertNull(error.getEmail());
         assertEquals("Number of ids and requests don't match", error.getError());
+    }
+
+    @Test
+    void testGetRequests() {
+        when(sheetsRequestRepository.findByStatus(REQUESTED)).thenReturn(TestObjects.REQUESTS);
+
+        var response = service.getSheetRequests(REQUESTED);
+
+        assertEquals(3, response.size());
+
+        assertEquals("matti@example.com", response.get(0).getEmail());
+        assertEquals("erkki@example.com", response.get(1).getEmail());
+        assertEquals("ville@example.com", response.get(2).getEmail());
     }
 }
