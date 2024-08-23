@@ -2,6 +2,10 @@ package fi.bizhop.emailerrest;
 
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.gson.GsonFactory;
+import com.google.api.services.gmail.GmailScopes;
+import com.google.api.services.sheets.v4.SheetsScopes;
+import com.google.auth.oauth2.AccessToken;
+import com.google.auth.oauth2.GoogleCredentials;
 import fi.bizhop.emailerrest.model.Code;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -32,6 +36,8 @@ public class Utils {
     private static final Pattern NBDG_CODE_PATTERN = Pattern.compile("^[0-9a-z]{16}$");
 
     public static final JsonFactory JSON_FACTORY = GsonFactory.getDefaultInstance();
+
+    private static final List<String> SCOPES = List.of(SheetsScopes.SPREADSHEETS_READONLY, GmailScopes.GMAIL_MODIFY);
 
     public static String formatDateTime(TemporalAccessor input) {
         return DATE_TIME_FORMATTER.format(input);
@@ -84,5 +90,11 @@ public class Utils {
         }
 
         return codes;
+    }
+
+    public static GoogleCredentials getCredentialsFromToken(final String token) {
+        var accessToken = new AccessToken(token.replace("Bearer ", ""), null);
+        return GoogleCredentials.create(accessToken)
+                .createScoped(SCOPES);
     }
 }

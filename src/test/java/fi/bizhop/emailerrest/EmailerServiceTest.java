@@ -45,9 +45,9 @@ public class EmailerServiceTest {
         when(codeRepository.findAllByStoreAndUsedFalse(PG)).thenReturn(new ArrayList<>(TestObjects.PG_CODES));
         when(codeRepository.findAllByStoreAndUsedFalse(NBDG)).thenReturn(new ArrayList<>(TestObjects.NBDG_CODES));
 
-        var response = service.completeSheetsRequests(List.of(1L, 2L), false, "Kivikon viikkokisat", null);
+        var response = service.completeSheetsRequests(List.of(1L, 2L), false, "Kivikon viikkokisat", null, null);
 
-        verify(gmailAPI, never()).sendEmail(any());
+        verify(gmailAPI, never()).sendEmailWithAccessToken(any(), any());
         verify(codeRepository, never()).save(any());
         verify(sentRepository, never()).save(any());
 
@@ -68,9 +68,9 @@ public class EmailerServiceTest {
         when(codeRepository.findAllByStoreAndUsedFalse(PG)).thenReturn(new ArrayList<>(List.of(TestObjects.PG_CODES.get(0))));
         when(codeRepository.findAllByStoreAndUsedFalse(NBDG)).thenReturn(Collections.emptyList());
 
-        var response = service.completeSheetsRequests(List.of(1L, 2L), false, "Kivikon viikkokisat", null);
+        var response = service.completeSheetsRequests(List.of(1L, 2L), false, "Kivikon viikkokisat", null, null);
 
-        verify(gmailAPI, never()).sendEmail(any());
+        verify(gmailAPI, never()).sendEmailWithAccessToken(any(), any());
         verify(codeRepository, never()).save(any());
         verify(sentRepository, never()).save(any());
 
@@ -99,15 +99,15 @@ public class EmailerServiceTest {
         when(codeRepository.findAllByStoreAndUsedFalse(PG)).thenReturn(new ArrayList<>(TestObjects.PG_CODES));
         when(codeRepository.findAllByStoreAndUsedFalse(NBDG)).thenReturn(new ArrayList<>(TestObjects.NBDG_CODES));
 
-        when(gmailAPI.sendEmail(any(Email.class))).thenAnswer((Answer<Email>) invocation -> {
+        when(gmailAPI.sendEmailWithAccessToken(any(Email.class), any())).thenAnswer((Answer<Email>) invocation -> {
             var email = (Email)invocation.getArguments()[0];
             email.setTimestamp(ZonedDateTime.now());
             return email;
         });
 
-        var response = service.completeSheetsRequests(List.of(1L, 2L), true, "Kivikon viikkokisat", null);
+        var response = service.completeSheetsRequests(List.of(1L, 2L), true, "Kivikon viikkokisat", null, null);
 
-        verify(gmailAPI, times(2)).sendEmail(any());
+        verify(gmailAPI, times(2)).sendEmailWithAccessToken(any(), any());
         verify(codeRepository, times(2)).save(any());
         verify(sentRepository, times(2)).save(any());
 
@@ -122,7 +122,7 @@ public class EmailerServiceTest {
     void requestIdsNotMatchingDb() {
         when(sheetsRequestRepository.findByIdInAndStatus(List.of(1L, 2L, 3L, 4L), REQUESTED)).thenReturn(TestObjects.REQUESTS);
 
-        var response = service.completeSheetsRequests(List.of(1L, 2L, 3L, 4L), false, "Kivikon viikkokisat", null);
+        var response = service.completeSheetsRequests(List.of(1L, 2L, 3L, 4L), false, "Kivikon viikkokisat", null, null);
 
         assertEquals(1, response.size());
         var error = response.get(0);

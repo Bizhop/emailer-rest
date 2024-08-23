@@ -12,7 +12,6 @@ import fi.bizhop.emailerrest.model.Request;
 import fi.bizhop.emailerrest.model.Sent;
 import fi.bizhop.emailerrest.model.SheetsRequest;
 import fi.bizhop.emailerrest.model.Store;
-import jdk.jshell.execution.Util;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -66,7 +65,7 @@ public class EmailerService {
         return list;
     }
 
-    private List<EmailWrapper> processRequests(List<SheetsRequest> sheetsRequests, boolean send, String competition, String date) {
+    private List<EmailWrapper> processRequests(List<SheetsRequest> sheetsRequests, boolean send, String competition, String date, String auth) {
         var requests = sheetsRequests.stream()
                 .map(Request::fromSheetsRequest)
                 .toList();
@@ -118,7 +117,7 @@ public class EmailerService {
             emails.stream()
                     .map(EmailWrapper::getEmail)
                     .filter(Objects::nonNull)
-                    .map(gmailAPI::sendEmail)
+                    .map(email -> gmailAPI.sendEmailWithAccessToken(email, auth))
                     .filter(Objects::nonNull)
                     .forEach(this::markSent);
         }
@@ -162,9 +161,9 @@ public class EmailerService {
         sentRepository.save(sent);
     }
 
-    public List<SheetsRequest> getNewSheetsRequests() {
+    public List<SheetsRequest> getNewSheetsRequests(String token) {
         try {
-            return sheetsAPI.getRequests().stream().sorted(compareRequests).toList();
+            return sheetsAPI.getRequests(token).stream().sorted(compareRequests).toList();
         } catch (Exception e) {
             e.printStackTrace();
             return null;
@@ -177,7 +176,7 @@ public class EmailerService {
                 : sheetsRequestRepository.findByStatus(status).stream().sorted(compareRequests).toList();
     }
 
-    public List<EmailWrapper> completeSheetsRequests(List<Long> ids, boolean send, String competition, String date) {
+    public List<EmailWrapper> completeSheetsRequests(List<Long> ids, boolean send, String competition, String date, String auth) {
         var requests = sheetsRequestRepository.findByIdInAndStatus(ids, REQUESTED);
 
         if(requests.size() != ids.size()) {
@@ -187,7 +186,7 @@ public class EmailerService {
             return List.of(error);
         }
 
-        var processedRequests = processRequests(requests, send, competition, date);
+        var processedRequests = processRequests(requests, send, competition, date, auth);
 
         if(send) {
             requests.forEach(request -> request.setStatus(COMPLETED));
@@ -215,5 +214,16 @@ public class EmailerService {
         sheetsRequestRepository.saveAll(requests);
 
         return sheetsRequestRepository.findByIdIn(ids);
+    }
+
+    public void sendEmailWithJWT(String jwt) {
+        var email = Email.builder()
+                .from(EMAIL_FROM)
+                .to("ville.piispa@gmail.com")
+                .subject("Test")
+                .content("Test")
+                .build();
+
+        gmailAPI.sendEmailWithAccessToken(email, jwt);
     }
 }

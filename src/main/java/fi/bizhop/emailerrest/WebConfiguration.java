@@ -1,7 +1,5 @@
 package fi.bizhop.emailerrest;
 
-import org.springframework.boot.web.servlet.FilterRegistrationBean;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
@@ -14,19 +12,8 @@ public class WebConfiguration implements WebMvcConfigurer {
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
                 .allowedMethods("GET", "POST", "OPTIONS")
-                .allowedOrigins("*")
-                .allowedHeaders("*");
-    }
-    @Bean
-    public FilterRegistrationBean<AccessFilter> accessFilter() {
-        var bean = new FilterRegistrationBean<AccessFilter>();
-
-        bean.setFilter(new AccessFilter());
-
-        bean.addUrlPatterns("/*");
-
-        bean.setOrder(1);
-
-        return bean;
+                .allowedOrigins("http://localhost:1234")
+                .allowedHeaders("*")
+                .allowCredentials(true);
     }
 }

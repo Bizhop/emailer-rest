@@ -1,22 +1,11 @@
 package fi.bizhop.emailerrest;
 
-import com.google.api.client.auth.oauth2.Credential;
-import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeInstalledApp;
-import com.google.api.client.extensions.jetty.auth.oauth2.LocalServerReceiver;
-import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeFlow;
-import com.google.api.client.googleapis.auth.oauth2.GoogleClientSecrets;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
-import com.google.api.client.googleapis.json.GoogleJsonError;
 import com.google.api.client.googleapis.json.GoogleJsonResponseException;
-import com.google.api.client.http.javanet.NetHttpTransport;
-import com.google.api.client.json.JsonFactory;
-import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.services.gmail.Gmail;
-import com.google.api.services.gmail.GmailScopes;
 import com.google.api.services.gmail.model.Message;
+import com.google.auth.http.HttpCredentialsAdapter;
 import fi.bizhop.emailerrest.model.Email;
-import fi.bizhop.emailerrest.provider.CredentialsProvider;
-import lombok.RequiredArgsConstructor;
 import org.apache.commons.codec.binary.Base64;
 import org.springframework.stereotype.Service;
 
@@ -24,23 +13,17 @@ import javax.mail.MessagingException;
 import javax.mail.Session;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.time.ZonedDateTime;
-import java.util.Collections;
-import java.util.List;
 import java.util.Properties;
 
 import static fi.bizhop.emailerrest.Utils.JSON_FACTORY;
+import static fi.bizhop.emailerrest.Utils.getCredentialsFromToken;
 import static javax.mail.Message.RecipientType.TO;
 
 @Service
-@RequiredArgsConstructor
 public class GmailAPI {
-    private final CredentialsProvider credentialsProvider;
-
     private final String APPLICATION_NAME = "Emailer";
 
     /**
@@ -88,13 +71,17 @@ public class GmailAPI {
      * Send an email from the user's mailbox to its recipient.
      *
      * @param email object with email details
+     * @param token google access token
      * @return email if sent, null if unsuccessful
      */
-    public Email sendEmail(Email email) {
-        // Build a new authorized API client service.
+    public Email sendEmailWithAccessToken(Email email, String token) {
         try {
             final var HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
-            var service = new Gmail.Builder(HTTP_TRANSPORT, JSON_FACTORY, credentialsProvider.getCredentials(HTTP_TRANSPORT))
+            var service = new Gmail.Builder(
+                    HTTP_TRANSPORT,
+                    JSON_FACTORY,
+                    new HttpCredentialsAdapter(getCredentialsFromToken(token))
+            )
                     .setApplicationName(APPLICATION_NAME)
                     .build();
 
@@ -106,11 +93,7 @@ public class GmailAPI {
                 email.setTimestamp(ZonedDateTime.now());
                 return email;
             } catch (GoogleJsonResponseException e) {
-                // TODO(developer) - handle error appropriately
-                GoogleJsonError error = e.getDetails();
-                if (error.getCode() == 403) {
-                    System.err.println("Unable to send message: " + e.getDetails());
-                }
+                e.printStackTrace();
             }
         } catch (Exception e) {
             e.printStackTrace();

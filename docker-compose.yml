@@ -19,11 +19,7 @@ services:
       - db
     container_name: emailer-backend
     environment:
-      - EMAILER_CLIENT_ID
-      - EMAILER_CLIENT_SECRET
-      - EMAILER_PROJECT_ID
       - EMAILER_SPREADSHEET_ID
       - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/emailer
       - SPRING_DATASOURCE_USERNAME=emailer
       - SPRING_DATASOURCE_PASSWORD=emailer
-      - API_KEY=test

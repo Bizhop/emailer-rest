@@ -5,8 +5,14 @@ import fi.bizhop.emailerrest.model.EmailWrapper;
 import fi.bizhop.emailerrest.model.Report;
 import fi.bizhop.emailerrest.model.SheetsRequest;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.time.format.DateTimeParseException;
 import java.util.List;
@@ -58,10 +64,18 @@ public class EmailerController {
         }
     }
 
-    @RequestMapping(value = "/sheetsrequests/new", method = RequestMethod.GET, produces = "application/json")
-    public @ResponseBody List<SheetsRequest> getNewSheetsRequests(HttpServletResponse response) {
+    @RequestMapping(value = "/test-email", method = RequestMethod.POST)
+    public void testEmail(HttpServletRequest request, HttpServletResponse response) {
         response.setStatus(SC_OK);
-        return service.getNewSheetsRequests();
+        var auth = request.getHeader("Authorization");
+        service.sendEmailWithJWT(auth);
+    }
+
+    @RequestMapping(value = "/sheetsrequests/new", method = RequestMethod.GET, produces = "application/json")
+    public @ResponseBody List<SheetsRequest> getNewSheetsRequests(HttpServletRequest request, HttpServletResponse response) {
+        response.setStatus(SC_OK);
+        var auth = request.getHeader("Authorization");
+        return service.getNewSheetsRequests(auth);
     }
 
     @RequestMapping(value = "/sheetsrequests", method = RequestMethod.GET, produces = "application/json")
@@ -71,9 +85,10 @@ public class EmailerController {
     }
 
     @RequestMapping(value = "/sheetsrequests/complete", method = RequestMethod.POST, consumes = "application/json", produces = "application/json")
-    public List<EmailWrapper> completeSheetsRequests(@RequestBody List<Long> ids, @RequestParam boolean send, @RequestParam(defaultValue = "Kivikon viikkokisat") String competition, @RequestParam(required = false) String date, HttpServletResponse response) {
+    public List<EmailWrapper> completeSheetsRequests(@RequestBody List<Long> ids, @RequestParam boolean send, @RequestParam(defaultValue = "Kivikon viikkokisat") String competition, @RequestParam(required = false) String date, HttpServletRequest request, HttpServletResponse response) {
         response.setStatus(SC_OK);
-        return service.completeSheetsRequests(ids, send, competition, date);
+        var auth = request.getHeader("Authorization");
+        return service.completeSheetsRequests(ids, send, competition, date, auth);
     }
 
     @RequestMapping(value = "/sheetsrequests/reject", method = RequestMethod.POST, consumes = "application/json", produces = "application/json")

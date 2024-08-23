@@ -2,10 +2,10 @@ package fi.bizhop.emailerrest;
 
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.services.sheets.v4.Sheets;
+import com.google.auth.http.HttpCredentialsAdapter;
 import fi.bizhop.emailerrest.db.SheetsRequestRepository;
 import fi.bizhop.emailerrest.model.SheetsRequest;
 import fi.bizhop.emailerrest.model.Store;
-import fi.bizhop.emailerrest.provider.CredentialsProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -17,21 +17,21 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static fi.bizhop.emailerrest.Utils.JSON_FACTORY;
+import static fi.bizhop.emailerrest.Utils.getCredentialsFromToken;
 import static fi.bizhop.emailerrest.model.SheetsRequest.Status.REQUESTED;
 
 @Service
 @RequiredArgsConstructor
 public class SheetsAPI {
-    private final CredentialsProvider credentialsProvider;
     private final SheetsRequestRepository sheetsRequestRepository;
 
     private final String APPLICATION_NAME = "Emailer";
     private final String SPREADSHEET_ID = System.getenv("EMAILER_SPREADSHEET_ID");
 
-    public List<SheetsRequest> getRequests() throws GeneralSecurityException, IOException {
+    public List<SheetsRequest> getRequests(String token) throws GeneralSecurityException, IOException {
         // Build a new authorized API client service.
         final var HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
-        var service = new Sheets.Builder(HTTP_TRANSPORT, JSON_FACTORY, credentialsProvider.getCredentials(HTTP_TRANSPORT))
+        var service = new Sheets.Builder(HTTP_TRANSPORT, JSON_FACTORY, new HttpCredentialsAdapter(getCredentialsFromToken(token)))
                 .setApplicationName(APPLICATION_NAME)
                 .build();
 
