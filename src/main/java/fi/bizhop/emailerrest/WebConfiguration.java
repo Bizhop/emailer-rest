@@ -12,7 +12,7 @@ public class WebConfiguration implements WebMvcConfigurer {
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
                 .allowedMethods("GET", "POST", "OPTIONS")
-                .allowedOrigins("http://localhost:1234")
+                .allowedOrigins("http://localhost:1234", "https://emailer-web.fly.dev/")
                 .allowedHeaders("*")
                 .allowCredentials(true);
     }
